@@ -1,4 +1,4 @@
-package br.com.itau.rsc.service;
+package br.com.itau.rsc.consumer;
 
 import java.time.Duration;
 
@@ -36,15 +36,18 @@ public class StreamConsumer
 
 	private StreamMessageListenerContainer<String, MapRecord<String, Object, String>> listenerContainer;
 	private Subscription subscription;
-	private final String CONSUMER_NAME = "consumer_3";
+	private final String CONSUMER_NAME = "consumer_1";
 	private final String CONSUMER_GROUP_NAME = "mysql";
 	private final String STREAM_NAME = "mystream";
 
 	@Override
 	public void onMessage(MapRecord<String, Object, String> message) {
 		try {
-			log.info("Message received => {}", message.getValue());
-			redisTemplate.opsForStream().acknowledge(CONSUMER_GROUP_NAME, message);
+			log.info("MessageId: " + message.getId());
+			log.info("Stream: " + message.getStream());
+			log.info("Body: " + message.getValue());
+
+			//redisTemplate.opsForStream().acknowledge(CONSUMER_GROUP_NAME, message);
 			log.info("Message has been processed");
 		} catch (Exception ex) {
 			// log the exception and increment the number of errors count
@@ -87,7 +90,7 @@ public class StreamConsumer
 		this.listenerContainer = StreamMessageListenerContainer.create(redisTemplate.getConnectionFactory(),
 				StreamMessageListenerContainer.StreamMessageListenerContainerOptions.builder()
 						.hashKeySerializer(new StringRedisSerializer()).hashValueSerializer(new StringRedisSerializer())
-						.pollTimeout(Duration.ofMillis(10000)).build());
+						.pollTimeout(Duration.ofMillis(100)).build());
 
 		this.subscription = listenerContainer.receive(Consumer.from(CONSUMER_GROUP_NAME, CONSUMER_NAME),
 				StreamOffset.create(STREAM_NAME, ReadOffset.lastConsumed()), this);

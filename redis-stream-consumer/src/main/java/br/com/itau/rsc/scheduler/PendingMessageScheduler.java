@@ -75,11 +75,9 @@ public class PendingMessageScheduler {
 		} else if (pendingMessage.getTotalDeliveryCount() <= MAX_RETRY) {
 			try {
 				MapRecord<String, Object, Object> message = messagesToProcess.get(0);
-				log.info("Processing pending message by consumer {}", CONSUMER_NAME);
-				log.info("MessageId: " + message.getId());
-				log.info("Stream: " + message.getStream());
-				log.info("Body: " + message.getValue());
+				process(message);
 				redisTemplate.opsForStream().acknowledge(CONSUMER_GROUP_NAME, message);
+				redisTemplate.opsForStream().delete(STREAM_NAME, message.getId());
 				log.info("Message has been processed after retrying");
 			} catch (Exception ex) {
 				log.error("Failed to process the message: {} ", messagesToProcess.get(0).getValue(), ex);
@@ -88,5 +86,12 @@ public class PendingMessageScheduler {
 			// Implement some alert
 			log.info("Message {} exceeded maximum retries", pendingMessage.getIdAsString());
 		}
+	}
+
+	private void process(MapRecord<?, ?, ?> message) {
+		log.info("Processing pending message by consumer {}", CONSUMER_NAME);
+		log.info("MessageId: " + message.getId());
+		log.info("Stream: " + message.getStream());
+		log.info("Body: " + message.getValue());
 	}
 }

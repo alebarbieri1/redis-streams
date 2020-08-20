@@ -47,7 +47,8 @@ public class StreamConsumer
 			log.info("Stream: " + message.getStream());
 			log.info("Body: " + message.getValue());
 
-			//redisTemplate.opsForStream().acknowledge(CONSUMER_GROUP_NAME, message);
+			redisTemplate.opsForStream().acknowledge(CONSUMER_GROUP_NAME, message);
+			redisTemplate.opsForStream().delete(STREAM_NAME, message.getId());
 			log.info("Message has been processed");
 		} catch (Exception ex) {
 			// log the exception and increment the number of errors count

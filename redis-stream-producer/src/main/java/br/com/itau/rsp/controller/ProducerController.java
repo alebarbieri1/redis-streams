@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.RedisStreamCommands.XAddOptions;
+import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ObjectRecord;
 import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.connection.stream.StreamRecords;
@@ -39,6 +41,22 @@ public class ProducerController {
 		ObjectRecord<String, Object> record = StreamRecords.newRecord().in(STREAM_KEY).ofObject(hash);
 
 		RecordId recordId = redisTemplate.opsForStream().add(record);
+
+		log.info("RecordId => {}", recordId.getValue());
+
+		return ResponseEntity.ok().build();
+	}
+
+	@PostMapping("/produce/v2")
+	private ResponseEntity<String> produceV2() throws JsonProcessingException {
+		ObjectMapper mapper = new ObjectMapper();
+		DummyEntity entity = DummyEntity.builder().age(23).message("mock")
+				.account(Account.builder().name("my account 2").number(224252).build()).build();
+		String json = mapper.writeValueAsString(entity);
+		Map<byte[], byte[]> hash = new HashMap<>();
+		hash.put("payload".getBytes(), json.getBytes());
+		MapRecord<byte[], byte[], byte[]> record = MapRecord.create(STREAM_KEY.getBytes(), hash);
+		RecordId recordId = redisTemplate.getConnectionFactory().getConnection().xAdd(record, XAddOptions.maxlen(100));
 
 		log.info("RecordId => {}", recordId.getValue());
 
